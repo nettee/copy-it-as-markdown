@@ -12,12 +12,13 @@ function copyToClipboard(text) {
 }
 
 function htmlToMarkdown(html) {
+    html = html.replace(/\s+/g, ' ');
+    console.log('sanitized HTML: ', html);
+
     const converter = new showdown.Converter();
     let markdown = converter.makeMarkdown(html);
 
-    markdown = markdown.replace(/<\/?tt>/g, '`');
     markdown = markdown.replace(/<!--.*?-->/g, '');
-    // markdown = markdown.replace(/[\r\n]/g, '$');
 
     return markdown;
 }
@@ -33,8 +34,8 @@ chrome.contextMenus.create({
         // Perform the callback when a message is received from the content script
         chrome.runtime.onMessage.addListener(function (message) {
             const html = message.selectedHtml;
-            const markdown = htmlToMarkdown(html);
             console.log('html: ', html);
+            const markdown = htmlToMarkdown(html);
             console.log('markdown: ', markdown);
             copyToClipboard(markdown);
             chrome.notifications.create({
