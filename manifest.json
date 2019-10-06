@@ -15,7 +15,7 @@
     "128": "img/icon128.png"
   },
   "background": {
-    "scripts": ["background.js"],
+    "scripts": ["background.js", "showdown.min.js"],
     "persistent": true
   },
   "browser_action": {
