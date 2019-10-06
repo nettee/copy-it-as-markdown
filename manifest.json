@@ -7,6 +7,7 @@
     "contextMenus",
     "tabs",
     "storage",
+    "notifications",
     "http://*/*",
     "https://*/*"
   ],
