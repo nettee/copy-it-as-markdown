@@ -33,12 +33,19 @@ function notifyCopied(content) {
 }
 
 chrome.contextMenus.create({
+    title: 'Copy it as markdown',
+    id: 'root',
+    contexts: ['all'],
+});
+
+chrome.contextMenus.create({
+    parentId: 'root',
     title: 'Selected text',
     type: 'normal',
     contexts: ['selection'],
     onclick: function (info, tab) {
         // Inject the content script into the current page
-        chrome.tabs.executeScript(null, {file: 'content.js'});
+        chrome.tabs.executeScript(null, {file: 'get-selected-html.js'});
 
         // Perform the callback when a message is received from the content script
         chrome.runtime.onMessage.addListener(function (message) {
@@ -53,6 +60,7 @@ chrome.contextMenus.create({
 });
 
 chrome.contextMenus.create({
+    parentId: 'root',
     title: 'Current page: [title](url)',
     type: 'normal',
     contexts: ['all'],
@@ -80,6 +88,7 @@ chrome.contextMenus.create({
 // });
 
 chrome.contextMenus.create({
+    parentId: 'root',
     title: 'Current page: [selected text](url)',
     type: 'normal',
     contexts: ['selection'],
@@ -91,4 +100,3 @@ chrome.contextMenus.create({
         notifyCopied(markdown);
     }
 });
-
