@@ -1,5 +1,5 @@
 language: javascript
-script: true
+script: make package
 deploy:
   provider: releases
   api_key:
