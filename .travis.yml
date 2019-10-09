@@ -1,3 +1,5 @@
+language: javascript
+script: true
 deploy:
   provider: releases
   api_key:
