@@ -32,6 +32,18 @@ function notifyCopied(content) {
     });
 }
 
+function compress(s, len) {
+    if (s.length <= len) {
+        return s;
+    } else {
+        return s.substring(0, len-3) + '...';
+    }
+}
+
+var pageTitle = 'title';
+var pageUrl = 'url';
+var pageSelectionText = 'selected text';
+
 var menuItems = {};
 
 menuItems.root = chrome.contextMenus.create({
@@ -40,9 +52,9 @@ menuItems.root = chrome.contextMenus.create({
     contexts: ['all'],
 });
 
-menuItems.selectedTextToMarkdown = chrome.contextMenus.create({
+menuItems.selectionToMarkdown = chrome.contextMenus.create({
     parentId: 'root',
-    title: 'Selected text',
+    title: 'Selection as markdown',
     type: 'normal',
     contexts: ['selection'],
     onclick: function (info, tab) {
@@ -93,6 +105,24 @@ menuItems.pageLinkSelectedText = chrome.contextMenus.create({
     }
 });
 
+function updateMenuTitle() {
+    chrome.contextMenus.update(menuItems.pageLinkTitle, {
+        title: `Current page: [${pageTitle}](${pageUrl})`,
+    });
+    chrome.contextMenus.update(menuItems.pageLinkSelectedText, {
+        title: `Current page: [${pageSelectionText}](${pageUrl})`,
+    });
+}
+
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+    const tabId = activeInfo.tabId;
+    chrome.tabs.get(tabId, function (tab) {
+        pageTitle = compress(tab.title, 15);
+        pageUrl = compress(tab.url, 30);
+        updateMenuTitle();
+    })
+});
+
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     if (message.request === 'selectedHtml') {
         const html = message.selectedHtml;
@@ -103,10 +133,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
         notifyCopied(markdown);
 
     } else if (message.request === 'selectedText') {
-        const text = message.selectedText;
-        console.log('text: ', text);
-        chrome.contextMenus.update(menuItems.pageLinkSelectedText, {
-            title: `Current page: [${text}](url)`,
-        });
+        pageSelectionText = message.selectedText;
+        updateMenuTitle();
     }
 });
