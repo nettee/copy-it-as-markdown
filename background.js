@@ -28,7 +28,7 @@ function notifyCopied(content) {
         type: 'basic',
         title: 'Content copied to clipboard',
         message: content,
-        iconUrl: 'img/icon128.png',
+        iconUrl: 'img/icon100.png',
     });
 }
 
@@ -43,6 +43,8 @@ function compress(s, len) {
 var pageTitle = 'title';
 var pageUrl = 'url';
 var pageSelectionText = 'selected text';
+var linkText = 'text';
+var linkUrl = 'url';
 
 var menuItems = {};
 
@@ -63,34 +65,6 @@ menuItems.selectionToMarkdown = chrome.contextMenus.create({
     }
 });
 
-menuItems.pageLinkTitle = chrome.contextMenus.create({
-    parentId: 'root',
-    title: 'Current page: [title](url)',
-    type: 'normal',
-    contexts: ['all'],
-    onclick: function (info, tab) {
-        const text = tab.title;
-        const url = info.pageUrl;
-        const markdown = `[${text}](${url})`;
-        copyToClipboard(markdown);
-        notifyCopied(markdown);
-    }
-});
-
-//// It's not easy to get hyperlink text
-//// See https://stackoverflow.com/questions/7427357/getting-hyperlink-text-on-chrome-right-click
-// chrome.contextMenus.create({
-//     title: 'Current link: [text](url)',
-//     type: 'normal',
-//     contexts: ['link'],
-//     onclick: function (info, tab) {
-//         const text = 'text';
-//         const url = info.linkUrl;
-//         const markdown = `[${text}](${url})`;
-//         alert(markdown);
-//     }
-// });
-
 menuItems.pageLinkSelectedText = chrome.contextMenus.create({
     parentId: 'root',
     title: 'Current page: [selected text](url)',
@@ -105,12 +79,36 @@ menuItems.pageLinkSelectedText = chrome.contextMenus.create({
     }
 });
 
+menuItems.hyperLink = chrome.contextMenus.create({
+    parentId: 'root',
+    title: 'This link: [text](link)',
+    type: 'normal',
+    contexts: ['link'],
+    onclick: function (info, tab) {
+        chrome.tabs.executeScript(null, {file: 'get-hyperlink-info.js'});
+    }
+});
+
+menuItems.pageLinkTitle = chrome.contextMenus.create({
+    parentId: 'root',
+    title: 'Current page: [title](url)',
+    type: 'normal',
+    contexts: ['all'],
+    onclick: function (info, tab) {
+        const text = tab.title;
+        const url = info.pageUrl;
+        const markdown = `[${text}](${url})`;
+        copyToClipboard(markdown);
+        notifyCopied(markdown);
+    }
+});
+
 function updateMenuTitle() {
-    chrome.contextMenus.update(menuItems.pageLinkTitle, {
-        title: `Current page: [${pageTitle}](${pageUrl})`,
-    });
     chrome.contextMenus.update(menuItems.pageLinkSelectedText, {
         title: `Current page: [${pageSelectionText}](${pageUrl})`,
+    });
+    chrome.contextMenus.update(menuItems.hyperLink, {
+        title: `This link: [${linkText}](${linkUrl})`,
     });
 }
 
@@ -135,5 +133,12 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     } else if (message.request === 'selectedText') {
         pageSelectionText = message.selectedText;
         updateMenuTitle();
+
+    } else if (message.request === 'hyperlinkInfo') {
+        linkText = message.text;
+        linkUrl = message.href;
+        const markdown = `[${linkText}](${linkUrl})`;
+        copyToClipboard(markdown);
+        notifyCopied(markdown);
     }
 });
