@@ -7,7 +7,8 @@ if (range) {
 }
 
 chrome.runtime.sendMessage({
-    'title': document.title,
-    'url': window.location.href,
-    'selectedHtml': selectedHtml,
+    request: 'selectedHtml',
+    title: document.title,
+    url: window.location.href,
+    selectedHtml: selectedHtml,
 });

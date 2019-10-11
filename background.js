@@ -32,13 +32,15 @@ function notifyCopied(content) {
     });
 }
 
-chrome.contextMenus.create({
+var menuItems = {};
+
+menuItems.root = chrome.contextMenus.create({
     title: 'Copy it as markdown',
     id: 'root',
     contexts: ['all'],
 });
 
-chrome.contextMenus.create({
+menuItems.selectedTextToMarkdown = chrome.contextMenus.create({
     parentId: 'root',
     title: 'Selected text',
     type: 'normal',
@@ -46,20 +48,10 @@ chrome.contextMenus.create({
     onclick: function (info, tab) {
         // Inject the content script into the current page
         chrome.tabs.executeScript(null, {file: 'get-selected-html.js'});
-
-        // Perform the callback when a message is received from the content script
-        chrome.runtime.onMessage.addListener(function (message) {
-            const html = message.selectedHtml;
-            console.log('html: ', html);
-            const markdown = htmlToMarkdown(html);
-            console.log('markdown: ', markdown);
-            copyToClipboard(markdown);
-            notifyCopied(markdown);
-        });
     }
 });
 
-chrome.contextMenus.create({
+menuItems.pageLinkTitle = chrome.contextMenus.create({
     parentId: 'root',
     title: 'Current page: [title](url)',
     type: 'normal',
@@ -87,7 +79,7 @@ chrome.contextMenus.create({
 //     }
 // });
 
-chrome.contextMenus.create({
+menuItems.pageLinkSelectedText = chrome.contextMenus.create({
     parentId: 'root',
     title: 'Current page: [selected text](url)',
     type: 'normal',
@@ -98,5 +90,23 @@ chrome.contextMenus.create({
         const markdown = `[${text}](${url})`;
         copyToClipboard(markdown);
         notifyCopied(markdown);
+    }
+});
+
+chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+    if (message.request === 'selectedHtml') {
+        const html = message.selectedHtml;
+        console.log('html: ', html);
+        const markdown = htmlToMarkdown(html);
+        console.log('markdown: ', markdown);
+        copyToClipboard(markdown);
+        notifyCopied(markdown);
+
+    } else if (message.request === 'selectedText') {
+        const text = message.selectedText;
+        console.log('text: ', text);
+        chrome.contextMenus.update(menuItems.pageLinkSelectedText, {
+            title: `Current page: [${text}](url)`,
+        });
     }
 });
