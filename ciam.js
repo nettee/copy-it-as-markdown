@@ -20,16 +20,38 @@ function htmlToMarkdown(html) {
  * @param {string} text - The text to copy
  */
 function copyToClipboard(text) {
-    // Use <textarea> element instead of <input>, because
-    // textareas can hold newlines
-    const input = document.createElement('textarea');
-    input.style.position = 'fixed';
-    input.style.opacity = 0;
-    input.value = text;
-    document.body.appendChild(input);
-    input.select();
-    document.execCommand('Copy');
-    document.body.removeChild(input);
+    // In MV3, we can't directly manipulate the clipboard from a service worker
+    // We'll use the Clipboard API through an injected content script
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (!tabs || tabs.length === 0) {
+            console.error('No active tab found');
+            return;
+        }
+        
+        const tabId = tabs[0].id;
+        
+        // Define the function to be executed in the content script
+        function copyTextInPage(textToCopy) {
+            const input = document.createElement('textarea');
+            input.style.position = 'fixed';
+            input.style.opacity = 0;
+            input.value = textToCopy;
+            document.body.appendChild(input);
+            input.select();
+            const success = document.execCommand('Copy');
+            document.body.removeChild(input);
+            return success;
+        }
+        
+        // Execute the script in the active tab
+        chrome.scripting.executeScript({
+            target: {tabId: tabId},
+            func: copyTextInPage,
+            args: [text]
+        }).catch(error => {
+            console.error('Failed to copy text to clipboard:', error);
+        });
+    });
 }
 
 /**
@@ -60,9 +82,13 @@ function compress(s, len) {
 }
 
 // Export the functions to make them available to other files
-window.ciam = {
+// In Service Worker context, use self instead of window
+const ciam = {
     htmlToMarkdown: htmlToMarkdown,
     copyToClipboard: copyToClipboard,
     notifyCopied: notifyCopied,
     compress: compress
 };
+
+// For compatibility with existing code
+self.ciam = ciam;

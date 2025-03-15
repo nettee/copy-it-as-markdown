@@ -1,14 +1,16 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "Copy it as markdown",
   "description": "Copy it as markdown!",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "permissions": [
     "contextMenus",
-    "background",
     "tabs",
     "storage",
     "notifications",
+    "scripting"
+  ],
+  "host_permissions": [
     "http://*/*",
     "https://*/*"
   ],
@@ -17,22 +19,27 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content.js"]
+      "matches": ["<all_urls>"],
+      "js": ["content.js", "showdown.min.js", "convert-html-to-markdown.js"],
+      "run_at": "document_end"
     }
   ],
   "background": {
-    "scripts": ["showdown.min.js", "ciam.js", "background.js"],
-    "persistent": true
+    "service_worker": "background-wrapper.js"
   },
-  "browser_action": {
+  "action": {
     "default_icon": {
       "19": "img/icon100.png",
       "38": "img/icon100.png"
     }
   },
-  "content_security_policy": "script-src 'self' https://ssl.google-analytics.com; object-src 'self'",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "web_accessible_resources": [
-    "img/icon100.png"
+    {
+      "resources": ["img/icon100.png", "get-selected-html.js", "get-hyperlink-info.js", "showdown.min.js", "convert-html-to-markdown.js"],
+      "matches": ["<all_urls>"]
+    }
   ]
 }
