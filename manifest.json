@@ -22,7 +22,7 @@
     }
   ],
   "background": {
-    "scripts": ["background.js", "showdown.min.js"],
+    "scripts": ["showdown.min.js", "ciam.js", "background.js"],
     "persistent": true
   },
   "browser_action": {

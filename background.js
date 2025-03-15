@@ -1,45 +1,3 @@
-function copyToClipboard(text) {
-    // Use <textarea> element instead of <input>, because
-    // textareas can hold newlines
-    const input = document.createElement('textarea');
-    input.style.position = 'fixed';
-    input.style.opacity = 0;
-    input.value = text;
-    document.body.appendChild(input);
-    input.select();
-    document.execCommand('Copy');
-    document.body.removeChild(input);
-}
-
-function htmlToMarkdown(html) {
-    html = html.replace(/\s+/g, ' ');
-    console.log('sanitized HTML: ', html);
-
-    const converter = new showdown.Converter();
-    let markdown = converter.makeMarkdown(html);
-
-    markdown = markdown.replace(/<!--.*?-->/g, '');
-
-    return markdown;
-}
-
-function notifyCopied(content) {
-    chrome.notifications.create({
-        type: 'basic',
-        title: 'Content copied to clipboard',
-        message: content,
-        iconUrl: 'img/icon100.png',
-    });
-}
-
-function compress(s, len) {
-    if (s.length <= len) {
-        return s;
-    } else {
-        return s.substring(0, len-3) + '...';
-    }
-}
-
 var pageTitle = 'title';
 var pageUrl = 'url';
 var pageSelectionText = 'selected text';
@@ -48,12 +6,14 @@ var linkUrl = 'url';
 
 var menuItems = {};
 
+// Create a right-click menu item in Chrome browser
 menuItems.root = chrome.contextMenus.create({
     title: 'Copy it as markdown',
     id: 'root',
     contexts: ['all'],
 });
 
+// When user selects text, show menu item: copy it as Markdown format
 menuItems.selectionToMarkdown = chrome.contextMenus.create({
     parentId: 'root',
     title: 'Selection as markdown',
@@ -65,6 +25,7 @@ menuItems.selectionToMarkdown = chrome.contextMenus.create({
     }
 });
 
+// When user selects text, show menu item: copy current page link with selected text as link text
 menuItems.pageLinkSelectedText = chrome.contextMenus.create({
     parentId: 'root',
     title: 'Current page: [selected text](url)',
@@ -74,11 +35,12 @@ menuItems.pageLinkSelectedText = chrome.contextMenus.create({
         const text = info.selectionText;
         const url = info.pageUrl;
         const markdown = `[${text}](${url})`;
-        copyToClipboard(markdown);
-        notifyCopied(markdown);
+        window.ciam.copyToClipboard(markdown);
+        window.ciam.notifyCopied(markdown);
     }
 });
 
+// When user selects a link, show menu item: copy the link in Markdown format
 menuItems.hyperLink = chrome.contextMenus.create({
     parentId: 'root',
     title: 'This link: [text](link)',
@@ -89,6 +51,7 @@ menuItems.hyperLink = chrome.contextMenus.create({
     }
 });
 
+// In normal cases, show menu item: copy current page link
 menuItems.pageLinkTitle = chrome.contextMenus.create({
     parentId: 'root',
     title: 'Current page: [title](url)',
@@ -98,8 +61,8 @@ menuItems.pageLinkTitle = chrome.contextMenus.create({
         const text = tab.title;
         const url = info.pageUrl;
         const markdown = `[${text}](${url})`;
-        copyToClipboard(markdown);
-        notifyCopied(markdown);
+        window.ciam.copyToClipboard(markdown);
+        window.ciam.notifyCopied(markdown);
     }
 });
 
@@ -115,30 +78,34 @@ function updateMenuTitle() {
 chrome.tabs.onActivated.addListener(function(activeInfo) {
     const tabId = activeInfo.tabId;
     chrome.tabs.get(tabId, function (tab) {
-        pageTitle = compress(tab.title, 15);
-        pageUrl = compress(tab.url, 30);
+        pageTitle = window.ciam.compress(tab.title, 15);
+        pageUrl = window.ciam.compress(tab.url, 30);
         updateMenuTitle();
     })
 });
 
+// Listen for messages from content scripts
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+    // Handle selected HTML content sent from get-selected-html.js
     if (message.request === 'selectedHtml') {
         const html = message.selectedHtml;
         console.log('html: ', html);
-        const markdown = htmlToMarkdown(html);
+        const markdown = window.ciam.htmlToMarkdown(html);
         console.log('markdown: ', markdown);
-        copyToClipboard(markdown);
-        notifyCopied(markdown);
+        window.ciam.copyToClipboard(markdown);
+        window.ciam.notifyCopied(markdown);
 
+    // Handle selected text content sent from content.js
     } else if (message.request === 'selectedText') {
         pageSelectionText = message.selectedText;
         updateMenuTitle();
 
+    // Handle hyperlink information sent from get-hyperlink-info.js
     } else if (message.request === 'hyperlinkInfo') {
         linkText = message.text;
         linkUrl = message.href;
         const markdown = `[${linkText}](${linkUrl})`;
-        copyToClipboard(markdown);
-        notifyCopied(markdown);
+        window.ciam.copyToClipboard(markdown);
+        window.ciam.notifyCopied(markdown);
     }
 });
