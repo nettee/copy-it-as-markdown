@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Copy it as markdown",
   "description": "Copy it as markdown!",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "permissions": [
     "contextMenus",
     "tabs",
