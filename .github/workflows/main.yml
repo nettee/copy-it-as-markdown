@@ -12,9 +12,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Get version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+      - name: Extract version and title from tag
+        id: extract_info
+        run: |
+          # 从 GITHUB_REF 中提取完整的 tag 名称
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          
+          # 提取版本号（v 后面的数字部分）
+          VERSION=$(echo $TAG_NAME | grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+' | sed 's/^v//')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          
+          # 检查 tag 是否包含额外的标题信息
+          if [[ $TAG_NAME =~ ^v[0-9]+\.[0-9]+\.[0-9]+-(.+)$ ]]; then
+            # 提取自定义标题部分并将连字符替换回空格
+            TITLE_PART=$(echo $TAG_NAME | sed -E 's/^v[0-9]+\.[0-9]+\.[0-9]+-//')
+            TITLE_PART=$(echo $TITLE_PART | tr '-' ' ')
+            RELEASE_TITLE="v$VERSION - $TITLE_PART"
+          else
+            # 使用默认标题
+            RELEASE_TITLE="v$VERSION"
+          fi
+          
+          echo "RELEASE_TITLE=$RELEASE_TITLE" >> $GITHUB_ENV
 
       - name: Create tar.gz package
         run: |
@@ -28,8 +47,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: copy-it-as-markdown-v${{ env.VERSION }}.tar.gz
+          name: ${{ env.RELEASE_TITLE }}
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
