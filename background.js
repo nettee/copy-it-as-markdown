@@ -49,7 +49,7 @@ menuItems.pageLinkTitle = chrome.contextMenus.create({
     contexts: ['all']
 });
 
-// 使用onClicked事件监听器处理菜单项点击
+// Use onClicked event listener to handle menu item clicks
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     switch (info.menuItemId) {
         case 'selectionToMarkdown':
@@ -107,6 +107,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
         console.log('markdown: ', markdown);
         self.ciam.copyToClipboard(markdown);
         self.ciam.notifyCopied(markdown);
+        sendResponse({success: true}); // Add response
     }
     // Handle selected HTML content sent from get-selected-html.js
     else if (message.request === 'selectedHtml') {
@@ -117,6 +118,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             if (!tabs || tabs.length === 0) {
                 console.error('No active tab found');
+                sendResponse({success: false, error: 'No active tab found'}); // Add error response
                 return;
             }
             
@@ -130,14 +132,15 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
                     request: 'convertHtmlToMarkdown',
                     html: html
                 });
+                sendResponse({success: true}); // Add response
             });
         });
-
+        return true; // Indicates that the response will be sent asynchronously
     // Handle selected text content sent from content.js
     } else if (message.request === 'selectedText') {
         pageSelectionText = message.selectedText;
         updateMenuTitle();
-
+        sendResponse({success: true}); // Add response
     // Handle hyperlink information sent from get-hyperlink-info.js
     } else if (message.request === 'hyperlinkInfo') {
         linkText = message.text;
@@ -145,5 +148,6 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
         const markdown = `[${linkText}](${linkUrl})`;
         self.ciam.copyToClipboard(markdown);
         self.ciam.notifyCopied(markdown);
+        sendResponse({success: true}); // Add response
     }
 });

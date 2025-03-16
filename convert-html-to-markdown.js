@@ -4,12 +4,15 @@
 // Listen for the request to convert HTML to Markdown
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     if (message.request === 'convertHtmlToMarkdown') {
-        // Showdown 已通过 manifest.json 预先加载，可以直接使用
+        // Showdown has been preloaded via manifest.json and can be used directly
         const markdown = convertHtmlToMarkdown(message.html);
         sendMarkdownToBackground(markdown);
+        
+        // Add response to indicate the message has been processed
+        sendResponse({success: true});
     }
-    // 返回true以保持消息通道开放，允许异步响应
-    return true;
+    // Since we have already called sendResponse synchronously, we don't need to return true
+    // Only if the process is truly asynchronous, we need to return true
 });
 
 /**
@@ -21,13 +24,13 @@ function convertHtmlToMarkdown(html) {
     html = html.replace(/\s+/g, ' ');
     console.log('sanitized HTML: ', html);
 
-    // 检查showdown是否已定义（作为安全检查）
+    // Check if showdown is defined (as a safety check)
     if (typeof showdown === 'undefined') {
         console.error('Showdown library is not loaded');
-        return html; // 返回原始HTML作为后备
+        return html; // Return original HTML as fallback
     }
 
-    // 注意：不再需要使用 window.showdown，直接使用 showdown 即可
+    // Note: No need to use window.showdown, just use showdown directly
     const converter = new showdown.Converter();
     let markdown = converter.makeMarkdown(html);
 
