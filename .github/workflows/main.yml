@@ -1,0 +1,35 @@
+name: Build and Release Extension
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggered when pushing a tag with v prefix, e.g. v1.0.2
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Create tar.gz package
+        run: |
+          mkdir -p copy-it-as-markdown-v${{ env.VERSION }}
+          cp -r manifest.json *.js img copy-it-as-markdown-v${{ env.VERSION }}/
+          tar -czf copy-it-as-markdown-v${{ env.VERSION }}.tar.gz copy-it-as-markdown-v${{ env.VERSION }}
+          rm -rf copy-it-as-markdown-v${{ env.VERSION }}
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: copy-it-as-markdown-v${{ env.VERSION }}.tar.gz
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
